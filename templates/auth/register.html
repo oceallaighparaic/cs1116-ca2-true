@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "macros.html" import form_field %}
+
+{% block header %}
+{% endblock %}
+
+{% block main_content %}
+<form action="" method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    {{ form_field(form.username) }}
+    <br />
+
+    {{ form_field(form.password) }}
+    <br />
+
+    {{ form_field(form.confirm_pw) }}
+    <br />
+
+    {{ form.submit() }}
+</form>
+{% endblock %}

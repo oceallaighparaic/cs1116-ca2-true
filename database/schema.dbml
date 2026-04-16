@@ -1,0 +1,28 @@
+Project app {
+  database_type: 'SQLite'
+  note: 'ER diagram for CA2 of CS1116 Web Development, made by Paraic Kelly'
+}
+
+Table users {
+  id integer [pk, increment]
+  username varchar [not null, unique]
+  password varchar [not null]
+  permission_id integer [not null, default: 1] // 1 == USER
+
+  records (id, username, password, permission_id) {
+    1, 'ADMIN', 'password', 2
+    2, 'EXAMPLE_USER', 'password', 1
+  }
+}
+
+Table permissions {
+    id integer [pk, increment]
+    name varchar [not null, unique]
+
+    records (id, name) {
+        1, 'USER'
+        2, 'ADMIN'
+    }
+}
+
+ref: users.permission_id < permissions.id

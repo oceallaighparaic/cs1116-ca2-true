@@ -1,0 +1,7 @@
+{% macro form_field(f) %}
+    {{ f.label }}
+    {{ f() }}
+    {% for e in f.errors %}
+        {{ e }}
+    {% endfor %}
+{% endmacro %}
