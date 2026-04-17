@@ -1,11 +1,11 @@
 import { randint } from "../utilities.js";
 
 const Tiles = {
-    None: {color: "black"},
-    Grass: {color: "green"},
-    Dirt: {color: "red"}
+    None: {color: "black", collision: true},
+    Grass: {color: "green", collision: false},
+    Dirt: {color: "red", collision: false}
 };
-const g_TILESIZE = 65; // px 
+const g_TILESIZE = 60; // px 
 
 /**
  * A level class, contained by `World`.

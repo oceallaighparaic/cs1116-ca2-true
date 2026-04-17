@@ -6,7 +6,7 @@ import { Player } from "./modules/entity.mjs";
 let g_CANVAS;
 let g_CONTEXT;
 
-const TARGET_DT = 1000/30; // 1000ms/30frames target
+const TARGET_DT = 1000/45; // 1000ms/45frames target
 let g_DT; let last_frame_time = Date.now(); // ms
 
 let g_WORLD;
@@ -25,11 +25,15 @@ document.addEventListener("DOMContentLoaded", () => {
     //#endregion
 
     g_WORLD = new World();
-    g_PLAYER = new Player(new Vector(g_CANVAS.width/2,g_CANVAS.height/2), Vector.zero(), new Vector(100,100));
+    g_PLAYER = new Player(
+        new Vector(g_CANVAS.width/2,g_CANVAS.height/2), 
+        Vector.zero(), 
+        new Vector(15,15),
+        new Vector(100,100)
+    );
 
     main();
 }, false);
-
 
 function main() {
     window.requestAnimationFrame(main);
@@ -60,21 +64,21 @@ function draw() {
 
     //#region LEVEL
     const current_level = g_WORLD.getCurrentLevel();
-    let draw_position = new Vector(0, (g_CANVAS.height/2)-(g_TILESIZE*Math.floor(current_level.floor.length/2)));
+    let draw_position = new Vector(0, Math.floor((g_CANVAS.height/2)-(g_WORLD.current_level_size.y/2)));
     for (let row of g_WORLD.getCurrentLevel().floor) {
-        draw_position.x = (g_CANVAS.width/2)-(g_TILESIZE*Math.floor(current_level.floor[0].length/2)); // formula = (center of screen) - (size of tiles)
+        draw_position.x = Math.floor((g_CANVAS.width/2)-(g_WORLD.current_level_size.x/2)); // Math.floor() snaps to integer pixels, removing the border on tiles
         for (let t of row) {
             g_CONTEXT.fillStyle = t.color;
             g_CONTEXT.fillRect(draw_position.x, draw_position.y, g_TILESIZE, g_TILESIZE);
-            draw_position.x += g_TILESIZE-0.5;
+            draw_position.x += g_TILESIZE;
         }
-        draw_position.y += g_TILESIZE-0.5;
+        draw_position.y += g_TILESIZE;
     }
     //#endregion
 
     //#region PLAYER
     g_CONTEXT.fillStyle = "yellow";
-    g_CONTEXT.fillRect(...g_PLAYER.position.toArray(), 15, 15);
+    g_CONTEXT.fillRect(...g_PLAYER.position.toArray(), ...g_PLAYER.size.toArray()); // unpacking took FOREVERRR to understand
     //#endregion
 }
 function process_input() {
@@ -117,4 +121,4 @@ document.addEventListener("keyup", (event) => {
     array_pop(g_KEYS_HELD, event.key);
 }, false);
 
-export { g_CANVAS, g_CONTEXT };
+export { g_CANVAS, g_CONTEXT, g_WORLD };

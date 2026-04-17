@@ -25,6 +25,7 @@ function array_pop(arr, item) {
  * - `static multiply()` -> Multiplies the x,y of a `Vector` instance by a scalar
  * - `static divide()` -> Divides two `Vector` instances
  * - `static normalize()` -> Normalizes the given `Vector` instance
+ * - `set()` -> Deep copies/sets a Vector
  */
 class Vector {
     constructor(x,y) {
@@ -51,8 +52,6 @@ class Vector {
     static subtract(v1, v2) {
         return new Vector(v1.x-v2.x, v1.y-v2.y);
     }
-    
-    
 
     static multiply(v1, v2) {
         return new Vector(v1.x*v2.x, v1.y*v2.y);
@@ -70,6 +69,12 @@ class Vector {
     static normalize(v) {
         const mag = Math.sqrt((v.x**2)+(v.y**2));
         return mag === 0 ? Vector.zero() : Vector.scale(v, 1/mag);
+    }
+
+    set(v) {
+        this.x = v.x;
+        this.y = v.y;
+        return this;
     }
 }
 
