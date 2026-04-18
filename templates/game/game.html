@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block header %}
+<style>
+    * {
+        padding: 0;
+        margin: 0;
+    }
+</style>
+<script type="module" src="{{ url_for('static', filename='scripts/game/main.js') }}"></script>
+{% endblock %}
+
+{% block main_content %}
+<canvas></canvas>
+{% endblock %}
