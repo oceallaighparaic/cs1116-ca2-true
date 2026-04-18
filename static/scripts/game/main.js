@@ -2,6 +2,7 @@ import { World } from "./modules/world.mjs";
 import { g_TILESIZE } from "./modules/level.mjs";
 import { array_pop, Vector } from "./utilities.js";
 import { Player } from "./modules/entity.mjs";
+import { UIManager, Canvas, UIElement, Text } from "./uimanager.js";
 
 let g_CANVAS;
 let g_CONTEXT;
@@ -10,6 +11,7 @@ const TARGET_DT = 1000/45; // 1000ms/45frames target
 let g_DT; let last_frame_time = Date.now(); // ms
 
 let g_WORLD;
+let g_UI;
 let g_PLAYER;
 let g_KEYS_HELD = [];
 
@@ -18,12 +20,14 @@ document.addEventListener("DOMContentLoaded", () => {
     //#region GLOBAL VARIABLES INITIALIZATION
     g_CANVAS = document.querySelector("canvas");
     g_CONTEXT = g_CANVAS.getContext("2d");
+    g_UI = new UIManager();
 
     // scale canvas
-    g_CANVAS.width = window.innerWidth; 
-    g_CANVAS.height = window.innerHeight;
+    g_CANVAS.width = Math.floor(window.innerWidth/g_TILESIZE)*g_TILESIZE; 
+    g_CANVAS.height = Math.floor(window.innerHeight/g_TILESIZE)*g_TILESIZE;
     //#endregion
 
+    //#region GAME SETUP
     g_WORLD = new World();
     g_PLAYER = new Player(
         new Vector(g_CANVAS.width/2,g_CANVAS.height/2), 
@@ -31,6 +35,19 @@ document.addEventListener("DOMContentLoaded", () => {
         new Vector(15,15),
         new Vector(100,100)
     );
+    //#endregion
+
+    //#region BASIC UI
+    let game_ui = new Canvas("game");
+    g_UI.addCanvas(game_ui);
+    let game_healthbar = new UIElement("healthbar", Vector.zero(), new Vector(g_PLAYER.size.x, g_PLAYER.size.y/4));
+    game_healthbar.background_color = "rgba(255,255,255,1)";
+    game_healthbar.position = Vector.subtract(
+        new Vector(g_CANVAS.width/2, g_CANVAS.height),
+        new Vector(game_healthbar.size.x/2, game_healthbar.size.y+5)
+    );
+    game_ui.addChild(game_healthbar);
+    //#endregion
 
     main();
 }, false);
@@ -53,7 +70,6 @@ function main() {
     draw();
     process_input();
 }
-
 function draw() {
     g_CONTEXT.clearRect(0,0,g_CANVAS.width,g_CANVAS.height);
 
@@ -64,9 +80,9 @@ function draw() {
 
     //#region LEVEL
     const current_level = g_WORLD.getCurrentLevel();
-    let draw_position = new Vector(0, Math.floor((g_CANVAS.height/2)-(g_WORLD.current_level_size.y/2)));
+    let draw_position = new Vector(0, (g_CANVAS.height/2)-(g_WORLD.current_level_size.y/2));
     for (let row of g_WORLD.getCurrentLevel().floor) {
-        draw_position.x = Math.floor((g_CANVAS.width/2)-(g_WORLD.current_level_size.x/2)); // Math.floor() snaps to integer pixels, removing the border on tiles
+        draw_position.x = (g_CANVAS.width/2)-(g_WORLD.current_level_size.x/2);
         for (let t of row) {
             g_CONTEXT.fillStyle = t.color;
             g_CONTEXT.fillRect(draw_position.x, draw_position.y, g_TILESIZE, g_TILESIZE);
@@ -79,6 +95,15 @@ function draw() {
     //#region PLAYER
     g_CONTEXT.fillStyle = "yellow";
     g_CONTEXT.fillRect(...g_PLAYER.position.toArray(), ...g_PLAYER.size.toArray()); // unpacking took FOREVERRR to understand
+    //#endregion
+
+    //#region UI
+    g_UI.getCanvasByName("game").getChildByName("healthbar").position = new Vector(g_PLAYER.position.x, g_PLAYER.position.y-5);
+    for (let c of g_UI.canvases) {
+        for (let e of c.children) {
+            e.draw();
+        }
+    }
     //#endregion
 }
 function process_input() {

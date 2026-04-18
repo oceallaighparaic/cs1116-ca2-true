@@ -3,9 +3,10 @@ import { randint } from "../utilities.js";
 const Tiles = {
     None: {color: "black", collision: true},
     Grass: {color: "green", collision: false},
-    Dirt: {color: "red", collision: false}
+    Dirt: {color: "red", collision: false},
+    Water: {color: "blue", collision: true}
 };
-const g_TILESIZE = 60; // px 
+const g_TILESIZE = 30; // px 
 
 /**
  * A level class, contained by `World`.
@@ -27,7 +28,7 @@ class Level {
             // if no preset floor is passed, generate a random one
             for (let h = 0; h<height; h++) {
                 let row = [];
-                for (let w = 0; w<width; w++) row.push([Tiles.None, Tiles.Grass, Tiles.Dirt][randint(0,2)]);
+                for (let w = 0; w<width; w++) row.push([Tiles.None, Tiles.Grass, Tiles.Grass, Tiles.Dirt, Tiles.Water][randint(0,4)]);
                 this.floor.push(row);
             }
         }

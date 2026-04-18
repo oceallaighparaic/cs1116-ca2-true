@@ -3,8 +3,8 @@ import { Level, Tiles, g_TILESIZE } from "./level.mjs";
 import { Vector } from "../utilities.js";
 
 /**
- * A World class created in `init()`. 
- * Only one of these exists, accessed through the WORLD global variable.
+ * A World singleton created in `init()`. 
+ * Accessed through the WORLD global variable.
  * 
  * Properties:
  * - `current_level` -> The current level id (index in `World.LEVELS`). 
@@ -20,7 +20,7 @@ class World {
     constructor() {
         this.current_level = 0;
         this.LEVELS = [];
-        this.LEVELS.push(new Level(8,8));// generate basic level0 fallback
+        this.LEVELS.push(new Level(25,25));// generate basic level0 fallback
         this.current_level_size = this.#calc_level_size();
     }
 
@@ -45,10 +45,7 @@ class World {
         //#region RETURN VALUES
         let ret = {
             tile: Tiles.None,
-            position: Vector.subtract(
-                Vector.add(Vector.scale(matrix_pos,g_TILESIZE), top_left), // reverse the process but this will go to the top left as we are working with matrix positions
-                new Vector(1.5,1.5) // there seems to be some error in the position returned, this fixes it
-            )
+            position: Vector.add(Vector.scale(matrix_pos,g_TILESIZE), top_left), // reverse the process but this will go to the top left as we are working with matrix positions
         };
         if (!((matrix_pos.x<0 || matrix_pos.x>=level.floor[0].length) || (matrix_pos.y<0 || matrix_pos.y>=level.floor.length))) {
             // inside the bounds of map
@@ -57,6 +54,13 @@ class World {
         //#endregion
 
         return ret;
+    }
+
+    loadLevel(id) {
+        if (id < this.LEVELS.length) {
+            this.current_level = id;
+            this.current_level_size = this.#calc_level_size();
+        }
     }
 
     #calc_level_size() {
