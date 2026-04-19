@@ -1,5 +1,4 @@
 import { array_pop, Vector } from "./utilities.js";
-import { g_CANVAS, g_CONTEXT } from "./main.js";
 
 /**
  * A UIManager singleton created in `init()`.
@@ -136,7 +135,7 @@ class Canvas extends BaseUI {
  * - `children` -> A list of children, sorted by z-index/draw order
  * - `allowed_children` -> A list of allowed children
  * - `visible`
- * - `position`
+ * - `position` -> *Note: Relative to the parent of the element
  * - `size`
  * - `background_color` -> The background color of the element, given in RGBA
  * 
@@ -152,12 +151,12 @@ class UIElement extends BaseUI {
         this.class = "UIElement"
 
         this.name = name;
-        this.allowed_children.concat(["Text"]);
+        this.allowed_children = this.allowed_children.concat(["Text"]);
         this.canvas = null;
         
         this.position = position;
         this.size = size;
-        this.background_color = `rgba(0,0,0,0)`;
+        this.background_color = `rgba(0,0,0,1)`;
     }
     cleanup() {
         super.cleanup();
@@ -169,32 +168,38 @@ class UIElement extends BaseUI {
         c.canvas = this.canvas;
     }
 
-    draw() {
+    draw(g_CONTEXT) {
         if (!this.visible) return;
 
+        let draw_pos = this.position;
+        if (this.parent !== null && this.parent !== this.canvas) draw_pos = Vector.add(draw_pos, this.parent.position);
+
         g_CONTEXT.fillStyle = this.background_color;
-        g_CONTEXT.fillRect(...this.position.toArray(), ...this.size.toArray());
+        g_CONTEXT.fillRect(...draw_pos.toArray(), ...this.size.toArray());
+
+        for (let e of this.children)
+            e.draw(g_CONTEXT);
+
+        return draw_pos;
     }
 }
 
 class Text extends UIElement {
     constructor(name, value, position, background_size) {
         super(name, position, background_size);
-        this.name = "Text";
+        this.class = "Text";
         this.allowed_children = [];
 
         this.value = value;
+        this.color = "rgba(0,0,0,1)";
     }
 
-    draw() {
+    draw(g_CONTEXT) {
         if (!this.visible) return;
-        super.draw();
+        let draw_pos = super.draw(g_CONTEXT);
 
-        g_CONTEXT.fillStyle = "black";
-        g_CONTEXT.fillText(this.value, ...this.position.toArray());
-
-        for (let e of this.children)
-            e.draw();
+        g_CONTEXT.fillStyle = this.color;
+        g_CONTEXT.fillText(this.value, ...draw_pos.toArray());
     }
 }
 

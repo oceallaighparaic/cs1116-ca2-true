@@ -1,6 +1,6 @@
 import { g_CANVAS } from "../main.js";
 import { Level, Tiles, g_TILESIZE } from "./level.mjs";
-import { Vector } from "../utilities.js";
+import { Vector } from "../../utilities.js";
 
 /**
  * A World singleton created in `init()`. 
@@ -15,6 +15,8 @@ import { Vector } from "../utilities.js";
  * Methods:
  * - `getCurrentLevel()` -> Returns the current `Level` instance
  * - `getTileAt()` -> Returns a tile enum at the `Vector` location and a position of the top left corner of the tile
+ * - `changeLevel()` -> Changes the current level to another level that is loaded based on the id
+ * - `loadLevel()` -> Loads a level from the `level` table and changes to it
  */
 class World {
     constructor() {
@@ -56,11 +58,39 @@ class World {
         return ret;
     }
 
-    loadLevel(id) {
+    changeLevel(id) {
         if (id < this.LEVELS.length) {
             this.current_level = id;
             this.current_level_size = this.#calc_level_size();
         }
+    }
+
+    loadLevel(name) {
+        let data = new FormData();
+        data.append("name", name);
+        let xhttp = new XMLHttpRequest();
+        xhttp.open("POST", "/load_level")
+        xhttp.addEventListener("readystatechange", () => {
+            if(xhttp.readyState === 4) { // if response has fully arrived
+                if (xhttp.status !== 200) { console.log("XMLHttpRequest failed."); return; }
+                if (xhttp.responseText === "failure") { console.log(`Failed to load level: ${name}`); return; }
+
+                const response = JSON.parse(xhttp.responseText);
+                // convert Tiles enum keys into actual tile objects
+                let matrix = [];
+                for (let r of response) {
+                    let row = [];
+                    for (let t of r) {
+                        row.push(Tiles[t]);
+                    }
+                    matrix.push(row);
+                }
+
+                this.LEVELS.push(new Level(matrix[0].length, matrix.length, matrix));
+                this.changeLevel(this.LEVELS.length-1);
+            }
+        }, false);
+        xhttp.send(data);;
     }
 
     #calc_level_size() {

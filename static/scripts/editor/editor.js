@@ -1,8 +1,7 @@
+import { Canvas, UIManager, UIElement, Text } from "../uimanager.js";
+import { g_TILESIZE, Tiles, Level } from "../game/modules/level.mjs";
 import { World } from "./modules/world.mjs";
-import { g_TILESIZE } from "./modules/level.mjs";
-import { array_pop, Vector } from "../utilities.js";
-import { Player } from "./modules/entity.mjs";
-import { UIManager, Canvas, UIElement, Text } from "../uimanager.js";
+import { Vector, array_pop } from "../utilities.js";
 
 let g_CANVAS;
 let g_CONTEXT;
@@ -12,8 +11,10 @@ let g_DT; let last_frame_time = Date.now(); // ms
 
 let g_WORLD;
 let g_UI;
-let g_PLAYER;
 let g_KEYS_HELD = [];
+let g_MOUSE = Vector.zero();
+
+let g_EXPORTING = false;
 
 // init
 document.addEventListener("DOMContentLoaded", () => {
@@ -27,26 +28,16 @@ document.addEventListener("DOMContentLoaded", () => {
     g_CANVAS.height = Math.floor(window.innerHeight/g_TILESIZE)*g_TILESIZE;
     //#endregion
 
-    //#region GAME SETUP
-    g_WORLD = new World();
-    g_PLAYER = new Player(
-        new Vector(g_CANVAS.width/2,g_CANVAS.height/2), 
-        Vector.zero(), 
-        new Vector(15,15),
-        new Vector(100,100)
-    );
+    //#region UI
+    let hover_canvas = new Canvas("hover_container");
+    g_UI.addCanvas(hover_canvas);
+    let hover = new UIElement("hover", Vector.zero(), new Vector(g_TILESIZE, g_TILESIZE));
+    hover.background_color = "rgba(255,0,255,0.5)";
+    hover_canvas.addChild(hover);
     //#endregion
 
-    //#region BASIC UI
-    let game_ui = new Canvas("game");
-    g_UI.addCanvas(game_ui);
-    let game_healthbar = new UIElement("healthbar", Vector.zero(), new Vector(g_PLAYER.size.x, g_PLAYER.size.y/4));
-    game_healthbar.background_color = "rgba(255,255,255,1)";
-    game_healthbar.position = Vector.subtract(
-        new Vector(g_CANVAS.width/2, g_CANVAS.height),
-        new Vector(game_healthbar.size.x/2, game_healthbar.size.y+5)
-    );
-    game_ui.addChild(game_healthbar);
+    //#region GAME SETUP
+    g_WORLD = new World();
     //#endregion
 
     main();
@@ -79,9 +70,9 @@ function draw() {
     //#endregion
 
     //#region LEVEL
-    const current_level = g_WORLD.getCurrentLevel();
+    const current_level = g_WORLD.level;
     let draw_position = new Vector(0, (g_CANVAS.height/2)-(g_WORLD.current_level_size.y/2));
-    for (let row of g_WORLD.getCurrentLevel().floor) {
+    for (let row of g_WORLD.level.floor) {
         draw_position.x = (g_CANVAS.width/2)-(g_WORLD.current_level_size.x/2);
         for (let t of row) {
             g_CONTEXT.fillStyle = t.color;
@@ -92,48 +83,66 @@ function draw() {
     }
     //#endregion
 
-    //#region PLAYER
-    g_CONTEXT.fillStyle = "yellow";
-    g_CONTEXT.fillRect(...g_PLAYER.position.toArray(), ...g_PLAYER.size.toArray()); // unpacking took FOREVERRR to understand
-    //#endregion
-
     //#region UI
-    g_UI.getCanvasByName("game").getChildByName("healthbar").position = new Vector(g_PLAYER.position.x, g_PLAYER.position.y-5);
     for (let c of g_UI.canvases) {
         for (let e of c.children) {
             e.draw(g_CONTEXT);
         }
     }
     //#endregion
+
+    //#region HOVER
+    const hover_hit = g_WORLD.getTileAt(g_MOUSE);
+    let hover_ui = g_UI.getCanvasByName("hover_container").getChildByName("hover");
+    hover_ui.position = hover_hit.position;
+    hover_ui.visible = hover_hit.tile !== Tiles.None;
+    //#endregion
 }
 function process_input() {
-    g_PLAYER.move_direction = Vector.zero();
     for (const k of g_KEYS_HELD) {
         switch(k) {
-            //#region PLAYER MOVEMENT VECTOR
-            case "w":
-                g_PLAYER.move_direction.y += -1;
+            case "q":
+                const hit = g_WORLD.getTileAt(g_MOUSE);
+                if (hit.tile !== Tiles.None) {
+                    g_WORLD.setTile(g_MOUSE, Tiles.Grass);
+                }
                 break;
-            case "a":
-                g_PLAYER.move_direction.x += -1;
+            case "Enter":
+                if (!g_EXPORTING) {
+                    g_EXPORTING = true;
+                    exportLevel();
+                }
                 break;
-            case "s":
-                g_PLAYER.move_direction.y += 1;
-                break;
-            case "d":
-                g_PLAYER.move_direction.x += 1;
-                break;
-            //#endregion
         }
     }
+}
 
-    //#region PLAYER MOVEMENT
-    g_PLAYER.move_direction = Vector.normalize(g_PLAYER.move_direction);
-    g_PLAYER.addPosition(Vector.scale(
-        Vector.multiply(g_PLAYER.move_direction,g_PLAYER.movespeed),
-        g_DT/1000 // convert to seconds
-    ));
-    //#endregion
+function exportLevel() {
+    // converts Tiles enum objects into the name of the Tiles enum property (name of tile) to save space
+    function get_tile(t) {
+        for (let k of Object.keys(Tiles)) {
+            if (JSON.stringify(Tiles[k]) === JSON.stringify(t)) {
+                return k;
+            }
+        }
+        return "None";
+    }
+
+    let matrix = [];
+    for (let r of g_WORLD.level.floor) {
+        let row = [];
+        for (let tile of r) {
+            row.push(get_tile(tile));
+        } 
+        matrix.push(row);
+    }
+
+    let data = new FormData();
+    data.append("floor", JSON.stringify(matrix));
+    data.append("name", "test");
+    let xhttp = new XMLHttpRequest();
+    xhttp.open("POST", "/upload_level");
+    xhttp.send(data);
 }
 
 document.addEventListener("keydown", (event) => {
@@ -145,5 +154,9 @@ document.addEventListener("keydown", (event) => {
 document.addEventListener("keyup", (event) => {
     array_pop(g_KEYS_HELD, event.key);
 }, false);
+window.addEventListener("mousemove", (event) => {
+    const rect = g_CANVAS.getBoundingClientRect();
+    g_MOUSE = new Vector(event.clientX-rect.left, event.clientY-rect.top);
+}, false);
 
-export { g_CANVAS, g_CONTEXT, g_WORLD };
+export { g_CANVAS, g_CONTEXT };

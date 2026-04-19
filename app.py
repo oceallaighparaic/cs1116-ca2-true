@@ -1,6 +1,6 @@
 #region IMPORTS
 # !-- Flask
-from flask import Flask, render_template, redirect, url_for, g, session
+from flask import Flask, render_template, redirect, url_for, g, session, request
 from flask import flash, get_flashed_messages
 from flask_session import Session
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -15,6 +15,9 @@ import forms
 # !-- Typing
 from flask import Response
 from sqlite3 import Connection
+
+# !-- Game interface
+import json
 #endregion
 
 #region FLASK CONFIG
@@ -69,6 +72,7 @@ def admin_required(v):
     @functools.wraps(v)
     def wrapped_v(*args, **kwargs):
         if g.user_permission != 2:
+            print("NOT ADMIN")
             return redirect(url_for("home_page"))
         return v(*args,**kwargs)
     return wrapped_v
@@ -133,4 +137,31 @@ def logout() -> Response:
 @login_required
 def game_page() -> str | Response:
     return render_template("game/game.html")
+
+@app.route("/editor", methods=["GET","POST"], strict_slashes=False)
+@admin_required
+def editor_page() -> str | Response:
+    return render_template("editor/editor.html")
+
+@app.route("/upload_level", methods=["POST"], strict_slashes=False)
+@admin_required
+def upload_level() -> str:
+    print(session.get("userid"))
+    db: Connection = database.get_db()
+    try:
+        db.execute("""INSERT INTO levels(creator_id, name, floor) VALUES (?,?,?)""",(session["userid"], request.form["name"], request.form["floor"]))
+        db.commit()
+        return "success"
+    except Exception as e:
+        return "failure"
+    
+@app.route("/load_level", methods=["POST"], strict_slashes=False)
+def load_level() -> str:
+    db = database.get_db()
+    floor: str = db.execute("""SELECT floor FROM levels WHERE name = ?""",(request.form["name"],)).fetchone()[0]
+    floor = json.loads(floor) # data is stored as json, so we need to convert it BACK to an object
+    if floor:
+        return floor # now it will be converted BACK to json to be transferred to the js :D
+    else:
+        return "failure"
 #endregion

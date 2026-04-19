@@ -1,5 +1,5 @@
 import { g_CANVAS, g_CONTEXT, g_WORLD } from "../main.js";
-import { Vector } from "../utilities.js";
+import { Vector } from "../../utilities.js";
 import { g_TILESIZE } from "./level.mjs";
 
 /**
