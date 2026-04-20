@@ -1,6 +1,6 @@
 import { g_CANVAS } from "../main.js";
 import { Level, Tiles, g_TILESIZE } from "./level.mjs";
-import { Vector } from "../../utilities.js";
+import { Vector, array_pop } from "../../utilities.js";
 
 /**
  * A World singleton created in `init()`. 
@@ -9,8 +9,9 @@ import { Vector } from "../../utilities.js";
  * Properties:
  * - `current_level` -> The current level name 
  *      + **Default: base, menu**
- * - `LEVELS` -> A list of Level instances
+ * - `LEVELS` -> A list of `Level` instances
  * - `current_level_size` -> A `Vector` of the pixel size of the current floor
+ * - `ENEMIES` -> A list of `Enemy` instances
  * 
  * Methods:
  * - `getCurrentLevel()` -> Returns the current `Level` instance
@@ -18,6 +19,7 @@ import { Vector } from "../../utilities.js";
  * - `changeLevel()` -> Changes the current level to another level that is loaded based on the id
  * - `loadLevel()` -> Loads a level from the `level` DB table and adds it to `World.LEVELS`
  * - `isNearTile()` -> Returns if the position is near some tiles depending on the range, and what the tile is
+ * - `spawnEnemy()` -> Adds an `Enemy` to the `World.ENEMIES` array given an instance
  */ 
 class World {
     constructor() {
@@ -130,6 +132,10 @@ class World {
 
     spawnEnemy(e) {
         this.ENEMIES.push(e);
+    }
+
+    removeEnemy(e) {
+        this.ENEMIES = array_pop(this.ENEMIES, e);
     }
 
     #calc_level_size() {

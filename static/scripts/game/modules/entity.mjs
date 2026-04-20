@@ -1,6 +1,8 @@
 import { g_CANVAS, g_CONTEXT, g_WORLD, g_PLAYER, g_DT } from "../main.js";
-import { Vector } from "../../utilities.js";
+import { Vector, randint } from "../../utilities.js";
 import { Tiles, g_TILESIZE } from "./level.mjs";
+
+let g_BULLET_COUNT = 0;
 
 /**
  * Base entity class.
@@ -9,16 +11,18 @@ import { Tiles, g_TILESIZE } from "./level.mjs";
  * - `position` -> `Vector` of the current true position.
  * - `velocity` -> `Vector` of the current velocity.
  * - `size` -> `Vector` of the size
+ * - `ignore_collision` -> A list of tiles to ignore collision with
  * 
  * Methods:
  * - `setPosition()` -> Sets the `position` given a `Vector`. Collision is done here.
  * - `addPosition()` -> Adds a `Vector` to the `position`
  */
 class Entity {
-    constructor(position, velocity, size) {
+    constructor(position, velocity, size, health) {
         this.position = position;
         this.velocity = velocity;
         this.size = size;
+        this.health = health;
         this.ignore_collision = [];
     }
 
@@ -130,26 +134,75 @@ class Entity {
  * - `position` -> `Vector` of the current true position of the player
  * - `velocity` -> `Vector` of the current velocity of the player
  * - `size` -> `Vector` of the size of the player
+ * - `ignore_collision` -> A list of tiles to ignore collision with
  * - `movespeed` -> `Vector` of the move speed of the player
  * - `move_direction` -> `Vector` of the movement of the player
+ * - `health` -> The health of the player
+ * - `iframes` -> Invulnerability for the player
  * 
  * Methods:
  * - `setPosition()` -> Sets the `position` given a `Vector`. Collision is done here.
  * - `addPosition()` -> Adds a `Vector` to the `position`
+ * - `damage()` -> Damages the player.
  */
 class Player extends Entity {
     constructor(position, velocity, size, movespeed) {
-        super(position, velocity, size);
+        super(position, velocity, size, 3);
         this.move_direction = Vector.zero();
         this.movespeed = movespeed; // px/s
+        this.iframes = 0;
+    }
+
+    damage(e, dmg) {
+        if (this.iframes<=0) {
+            this.health -= dmg;
+            if (this.health<0) {
+                console.log("Died!");
+            } else {
+                this.iframes = 10;
+            }
+        }
     }
 }
 
-class Dasher extends Entity {
-    constructor(position, velocity, size, movespeed) {
-        super(position, velocity, size);
-        this.type = "Dasher";
+class Enemy extends Entity {
+    constructor(position, velocity, size, movespeed, health) {
+        super(position, velocity, size, health);
+        this.type = "Enemy";
         this.movespeed = movespeed;
+    }
+
+    setPosition(v) {
+        let b_collided = super.setPosition(v);
+
+        if (Vector.magnitude(Vector.subtract(g_PLAYER.position, this.position))<Vector.magnitude(g_PLAYER.size)) {
+            g_PLAYER.damage(this, 1);
+        }
+
+        return b_collided;
+    }
+}
+
+/**
+ * An Enemy which holds position for a certain amount of time, tracking the player,
+ * and then dashes towards where the player was until it collides with a wall
+ * 
+ * Properties:
+ * - `position` -> `Vector` of the current true position.
+ * - `velocity` -> `Vector` of the current velocity.
+ * - `size` -> `Vector` of the size
+ * - `ignore_collision` -> A list of tiles to ignore collision with
+ * 
+ * Methods:
+ * - `setPosition()` -> Sets the `position` given a `Vector`. Collision is done here.
+ * - `addPosition()` -> Adds a `Vector` to the `position`
+ * - `update()` -> Triggers Enemy behaviour, updates Enemy state
+ */
+class Dasher extends Enemy {
+    constructor(position, velocity, size) {
+        super(position, velocity, size, new Vector(200,200), 1);
+        this.type = "Dasher";
+        this.color = "purple";
 
         this.target = null;
         this.cooldown = 0; // seconds
@@ -182,7 +235,80 @@ class Dasher extends Entity {
             this.b_moving = false;
             this.cooldown = 5; // seconds
         }
+        return b_collided;
     };
 }
 
-export { Player, Dasher };
+class Zombie extends Enemy {
+    constructor(position, velocity, size, movespeed) {
+        super(position, velocity, size, movespeed, 3);
+        this.type = "Zombie";
+        this.color = "green";
+    }
+
+    update() {
+        this.target = Vector.normalize(Vector.subtract(g_PLAYER.position, this.position));
+        this.addPosition(Vector.multiply(this.target, this.movespeed));
+    }
+}
+
+class Skeleton extends Enemy {
+    constructor(position, velocity, size) {
+        super(position, velocity, size, new Vector(20,20), 2);
+        this.type = "Skeleton";
+        this.color = "white";
+
+        this.cooldown = 2;
+        this.b_moving = false;
+        this.target = null;
+    }
+
+    update() {
+        if (this.cooldown>0.1) {
+            this.cooldown -= 1/g_DT;
+
+            // skeleton moves while on cd
+            if (!this.b_moving) {
+                // select movement target
+                this.b_moving = true;
+                this.target = new Vector(randint(-10,10)/10, randint(-10,10)/10);
+            } else if (this.target !== null) {
+                // move towards target
+                this.addPosition(Vector.multiply(this.target, Vector.scale(this.movespeed, 1/g_DT)));
+            }
+            return;
+        }
+        this.target = null;
+        this.b_moving = false;
+        this.cooldown = 2;
+
+        // shoot!
+        g_WORLD.spawnEnemy(new Bullet(
+            this.position,
+            Vector.zero(),
+            new Vector(5,5),
+            new Vector(250,250)
+        ))
+    }
+}
+
+class Bullet extends Dasher {
+    constructor(position, velocity, size, movespeed) {
+        super(position, velocity, size, 100000);
+        this.movespeed = movespeed;
+        this.type = "Bullet";
+        this.color = "red";
+
+        g_BULLET_COUNT++;
+        this.id = g_BULLET_COUNT;
+    }
+
+    setPosition(v) {
+        let b_collided = super.setPosition(v);
+        if (b_collided) {
+            g_WORLD.removeEnemy(this);
+        }
+    }
+}
+
+export { Player, Dasher, Zombie, Skeleton };

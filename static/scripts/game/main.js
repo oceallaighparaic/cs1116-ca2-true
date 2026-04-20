@@ -1,7 +1,7 @@
 import { World } from "./modules/world.mjs";
 import { Tiles, g_TILESIZE } from "./modules/level.mjs";
 import { array_pop, Vector } from "../utilities.js";
-import { Player, Dasher } from "./modules/entity.mjs";
+import { Player, Dasher, Zombie, Skeleton } from "./modules/entity.mjs";
 import { UIManager, Canvas, UIElement, Text } from "../uimanager.js";
 
 let g_CANVAS;
@@ -50,9 +50,19 @@ document.addEventListener("DOMContentLoaded", () => {
     g_WORLD.spawnEnemy(new Dasher(
         Vector.subtract(new Vector(g_CANVAS.width/2, g_CANVAS.height/2), new Vector(100,100)),
         Vector.zero(),
-        new Vector(10,10),
-        new Vector(200,200)
+        new Vector(10,10)
     ));
+    g_WORLD.spawnEnemy(new Zombie(
+        Vector.subtract(new Vector(g_CANVAS.width/2, g_CANVAS.height/2), new Vector(100,100)), 
+        Vector.zero(), 
+        new Vector(20,20), 
+        new Vector(1,1)
+    ));
+    g_WORLD.spawnEnemy(new Skeleton(
+        Vector.subtract(new Vector(g_CANVAS.width/2, g_CANVAS.height/2), new Vector(100,100)), 
+        Vector.zero(), 
+        new Vector(15,15), 
+    ))
     //#endregion
 
     //#region BASIC UI
@@ -96,6 +106,7 @@ function main() {
     for (let e of g_WORLD.ENEMIES) {
         e.update();
     }
+    if (g_PLAYER.iframes>0) g_PLAYER.iframes--;
 }
 function draw() {
     g_CONTEXT.clearRect(0,0,g_CANVAS.width,g_CANVAS.height);
@@ -125,19 +136,20 @@ function draw() {
             // choreograph of dash
             g_CONTEXT.beginPath();
             g_CONTEXT.moveTo(...e.position.toArray());
-            if (!e.b_moving) g_CONTEXT.lineTo(...Vector.add(e.position, Vector.scale(Vector.normalize(Vector.subtract(e.position, g_PLAYER.position)),-100)).toArray());
+            if (!e.b_moving) g_CONTEXT.lineTo(...Vector.add(e.position, Vector.scale(Vector.normalize(Vector.subtract(g_PLAYER.position, e.position)),100)).toArray());
             g_CONTEXT.strokeStyle = "red";
             g_CONTEXT.lineWidth = 2;
             g_CONTEXT.stroke();
         }
 
-        g_CONTEXT.fillStyle = "pink";
+        g_CONTEXT.fillStyle = e.color;
         g_CONTEXT.fillRect(...e.position.toArray(), ...e.size.toArray());
     }
     //#endregion
 
     //#region PLAYER
-    g_CONTEXT.fillStyle = "yellow";
+    g_CONTEXT.fillStyle = "rgba(255,140,0,1)";
+    if (g_PLAYER.iframes>0) g_CONTEXT.fillStyle = "yellow"; // iframe indicator
     g_CONTEXT.fillRect(...g_PLAYER.position.toArray(), ...g_PLAYER.size.toArray()); // unpacking took FOREVERRR to understand
     //#endregion
 
