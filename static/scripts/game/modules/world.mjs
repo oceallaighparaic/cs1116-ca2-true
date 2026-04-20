@@ -25,6 +25,7 @@ class World {
         this.LEVELS.push(new Level("base",25,25));// generate basic level0 fallback
         this.current_level = "base";
         this.current_level_size = this.#calc_level_size();
+        this.ENEMIES = [];
     }
 
     getCurrentLevel() {
@@ -125,6 +126,10 @@ class World {
             y++;
         }
         return {is_near: false};
+    }
+
+    spawnEnemy(e) {
+        this.ENEMIES.push(e);
     }
 
     #calc_level_size() {

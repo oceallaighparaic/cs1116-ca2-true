@@ -1,7 +1,7 @@
 import { World } from "./modules/world.mjs";
 import { Tiles, g_TILESIZE } from "./modules/level.mjs";
 import { array_pop, Vector } from "../utilities.js";
-import { Player } from "./modules/entity.mjs";
+import { Player, Dasher } from "./modules/entity.mjs";
 import { UIManager, Canvas, UIElement, Text } from "../uimanager.js";
 
 let g_CANVAS;
@@ -47,6 +47,12 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     g_WORLD.loadLevel("menu", true);
     g_WORLD.loadLevel("test1");
+    g_WORLD.spawnEnemy(new Dasher(
+        Vector.subtract(new Vector(g_CANVAS.width/2, g_CANVAS.height/2), new Vector(100,100)),
+        Vector.zero(),
+        new Vector(10,10),
+        new Vector(200,200)
+    ));
     //#endregion
 
     //#region BASIC UI
@@ -86,6 +92,10 @@ function main() {
 
     draw();
     process_input();
+
+    for (let e of g_WORLD.ENEMIES) {
+        e.update();
+    }
 }
 function draw() {
     g_CONTEXT.clearRect(0,0,g_CANVAS.width,g_CANVAS.height);
@@ -106,6 +116,23 @@ function draw() {
             draw_position.x += g_TILESIZE;
         }
         draw_position.y += g_TILESIZE;
+    }
+    //#endregion
+
+    //#region ENEMIES
+    for (let e of g_WORLD.ENEMIES) {
+        if (e.type === "Dasher") {
+            // choreograph of dash
+            g_CONTEXT.beginPath();
+            g_CONTEXT.moveTo(...e.position.toArray());
+            if (!e.b_moving) g_CONTEXT.lineTo(...Vector.add(e.position, Vector.scale(Vector.normalize(Vector.subtract(e.position, g_PLAYER.position)),-100)).toArray());
+            g_CONTEXT.strokeStyle = "red";
+            g_CONTEXT.lineWidth = 2;
+            g_CONTEXT.stroke();
+        }
+
+        g_CONTEXT.fillStyle = "pink";
+        g_CONTEXT.fillRect(...e.position.toArray(), ...e.size.toArray());
     }
     //#endregion
 
@@ -182,4 +209,4 @@ window.addEventListener("mousemove", (event) => {
     g_MOUSE = new Vector(event.clientX-rect.left, event.clientY-rect.top);
 }, false);
 
-export { g_CANVAS, g_CONTEXT, g_WORLD };
+export { g_PLAYER, g_CANVAS, g_CONTEXT, g_WORLD, g_DT };

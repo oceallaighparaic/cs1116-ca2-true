@@ -7,7 +7,7 @@ const Tiles = {
     Grass: {color: "rgba(0,255,0,1)", collision: false},
     Dirt: {color: "rgba(168, 121, 50,1)", collision: false},
     Water: {color: "rgba(0,0,255,1)", collision: true},
-    Door: {color: "rgba(91,106,139,1)", collision: true, interact: door_interact}
+    Door: {color: "rgba(91,106,139,1)", collision: false, interact: door_interact}
 };
 const g_TILESIZE = 30; // px 
 

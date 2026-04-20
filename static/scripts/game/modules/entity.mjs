@@ -1,4 +1,4 @@
-import { g_CANVAS, g_CONTEXT, g_WORLD } from "../main.js";
+import { g_CANVAS, g_CONTEXT, g_WORLD, g_PLAYER, g_DT } from "../main.js";
 import { Vector } from "../../utilities.js";
 import { Tiles, g_TILESIZE } from "./level.mjs";
 
@@ -19,6 +19,7 @@ class Entity {
         this.position = position;
         this.velocity = velocity;
         this.size = size;
+        this.ignore_collision = [];
     }
 
     // collision is done here!!
@@ -31,11 +32,12 @@ class Entity {
         const delta = Vector.subtract(v, this.position);
 
         //#region COLLISION
+        let b_collided = false;
         function calc_depenetration(self,e,t) {
-            //#region DEBUG
-            g_CONTEXT.fillStyle = "purple";
-            g_CONTEXT.fillRect(...Vector.add(t, new Vector(g_TILESIZE/2-5, g_TILESIZE/2-5)).toArray(), 10,10);
-            //#endregion
+            // //#region DEBUG
+            // g_CONTEXT.fillStyle = "purple";
+            // g_CONTEXT.fillRect(...Vector.add(t, new Vector(g_TILESIZE/2-5, g_TILESIZE/2-5)).toArray(), 10,10);
+            // //#endregion
             let ret = Vector.zero();
             // overlap = distance - (half the size of e + half the size of t)
             const t_size = new Vector(g_TILESIZE, g_TILESIZE);
@@ -76,11 +78,13 @@ class Entity {
                 top: g_WORLD.getTileAt(corners.top)
             }
 
-            if (Tiles[projections.bottom.tile].collision) {
+            if (Tiles[projections.bottom.tile].collision && !this.ignore_collision.includes(projections.bottom.tile)) {
                 d.x += calc_depenetration(this, new Vector(v.x,this.position.y), projections.bottom.position).x;
+                b_collided = true;
             }
-            else if (Tiles[projections.top.tile].collision) {
+            else if (Tiles[projections.top.tile].collision && !this.ignore_collision.includes(projections.top.tile)) {
                 d.x += calc_depenetration(this, new Vector(v.x,this.position.y), projections.top.position).x;
+                b_collided = true;
             }
         }
 
@@ -99,12 +103,19 @@ class Entity {
                 right: g_WORLD.getTileAt(corners.right)
             }
 
-            if (Tiles[projections.left.tile].collision) d.y += calc_depenetration(this, new Vector(this.position.x,v.y), projections.left.position).y;
-            else if (Tiles[projections.right.tile].collision) d.y += calc_depenetration(this, new Vector(this.position.x,v.y), projections.right.position).y;
+            if (Tiles[projections.left.tile].collision && !this.ignore_collision.includes(projections.left.tile)) {
+                d.y += calc_depenetration(this, new Vector(this.position.x,v.y), projections.left.position).y;
+                b_collided = true;
+            }
+            else if (Tiles[projections.right.tile].collision && !this.ignore_collision.includes(projections.right.tile)) {
+                d.y += calc_depenetration(this, new Vector(this.position.x,v.y), projections.right.position).y;
+                b_collided = true;
+            }
         }
         //#endregion
 
         this.position = d;
+        return b_collided;
     }
 
     addPosition(v) {
@@ -134,4 +145,44 @@ class Player extends Entity {
     }
 }
 
-export { Player };
+class Dasher extends Entity {
+    constructor(position, velocity, size, movespeed) {
+        super(position, velocity, size);
+        this.type = "Dasher";
+        this.movespeed = movespeed;
+
+        this.target = null;
+        this.cooldown = 0; // seconds
+        this.b_moving = false;
+
+        this.ignore_collision = ["Water"];
+    } 
+
+    update() {
+        if(this.cooldown>0.1) {
+            this.cooldown -= 1/g_DT;
+            return;
+        }
+
+        // first time setup
+        if (!this.b_moving) {
+            this.b_moving = true;
+            this.target = Vector.normalize(Vector.subtract(g_PLAYER.position, this.position))
+            return;
+        }
+
+        // go towards target
+        this.addPosition(Vector.multiply(this.target, Vector.scale(this.movespeed, 1/g_DT)));
+    }
+
+    setPosition(v) {
+        let b_collided = super.setPosition(v);
+        if(b_collided) {
+            this.target = null;
+            this.b_moving = false;
+            this.cooldown = 5; // seconds
+        }
+    };
+}
+
+export { Player, Dasher };
