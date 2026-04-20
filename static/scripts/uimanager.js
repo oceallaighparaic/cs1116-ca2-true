@@ -151,7 +151,7 @@ class UIElement extends BaseUI {
         this.class = "UIElement"
 
         this.name = name;
-        this.allowed_children = this.allowed_children.concat(["Text"]);
+        this.allowed_children = this.allowed_children.concat(["Text","Button"]);
         this.canvas = null;
         
         this.position = position;
@@ -184,6 +184,30 @@ class UIElement extends BaseUI {
     }
 }
 
+/**
+ * Text. Inherits from UIElement
+ * 
+ * Properties:
+ * - `class` -> The name of the class
+ * - `name`
+ * - `parent` -> The parent of the element
+ * - `canvas` -> The canvas of the element
+ * - `children` -> A list of children, sorted by z-index/draw order
+ * - `allowed_children` -> A list of allowed children
+ * - `visible`
+ * - `position` -> *Note: Relative to the parent of the element
+ * - `size` -> Size of the background
+ * - `background_color` -> The background color of the element, given in RGBA
+ * - `value`
+ * - `color` -> The color of the text
+ * - `font_size`
+ * 
+ * Methods:
+ * - `cleanup()` -> "Deletes" this instance by setting `this.parent`, `this.canvas` to `null` and invoking `cleanup()` on all children
+ * - `addChild()` -> Adds an instance to `this.children` if it is an allowed type
+ * - `removeChild()` -> Removes an instance from `this.children` and invokes `c.cleanup()`
+ * - `getChildByName()` -> Returns an instance from `this.children` found by `c.name`
+ */
 class Text extends UIElement {
     constructor(name, value, position, background_size) {
         super(name, position, background_size);
@@ -192,15 +216,52 @@ class Text extends UIElement {
 
         this.value = value;
         this.color = "rgba(0,0,0,1)";
+        this.font_size = 20; // px
     }
 
     draw(g_CONTEXT) {
         if (!this.visible) return;
         let draw_pos = super.draw(g_CONTEXT);
 
+        g_CONTEXT.font = `${this.font_size}px Verdana`;
+        g_CONTEXT.textAlign = "center";
         g_CONTEXT.fillStyle = this.color;
         g_CONTEXT.fillText(this.value, ...draw_pos.toArray());
     }
 }
 
-export { UIManager, Canvas, UIElement, Text };
+class Button extends UIElement {
+    constructor(html_canvas, name, position, size, func) {
+        super(name, position, size);
+        this.class = "Button";
+        this.allowed_children = ["Text"];
+
+        this.onClick = func;
+        this._html_canvas = html_canvas;
+        html_canvas.addEventListener("mousedown", (event) => {this.detectClick(event);}, false);
+    }
+    cleanup() {
+        super.cleanup()
+        this._html_canvas.removeEventListener("mousedown", this.detectClick, false);
+    }
+
+    detectClick(event) {
+        if (!this.visible) return;
+
+        const rect = this._html_canvas.getBoundingClientRect();
+        const mouse = new Vector(event.clientX-rect.left, event.clientY-rect.top);
+        if (
+            (mouse.x >= this.position.x+this.parent.position.x && mouse.x <= this.position.x+this.parent.position.x+this.size.x) &&
+            (mouse.y >= this.position.y+this.parent.position.y && mouse.y <= this.position.y+this.parent.position.y+this.size.y)
+        ) {
+            console.log(`Clicked on ${this.name}`);
+            this.onClick();
+        }
+    }
+
+    draw(g_CONTEXT) {
+        super.draw(g_CONTEXT);
+    }
+}
+
+export { UIManager, Canvas, UIElement, Text, Button };

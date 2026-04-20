@@ -5,22 +5,28 @@ const Tiles = {
     Empty: {color: "rgba(255,255,255,1)", collision: false},
     Wall: {color: "rgba(125,125,125,1)", collision: true},
     Grass: {color: "rgba(0,255,0,1)", collision: false},
-    Dirt: {color: "rgba(255,0,0,1)", collision: false},
-    Water: {color: "rgba(0,0,255,1)", collision: true}
+    Dirt: {color: "rgba(168, 121, 50,1)", collision: false},
+    Water: {color: "rgba(0,0,255,1)", collision: true},
+    Door: {color: "rgba(91,106,139,1)", collision: true, interact: door_interact}
 };
 const g_TILESIZE = 30; // px 
 
+//#region TILE BEHAVIOURS
+function door_interact(g_WORLD) {
+    g_WORLD.changeLevel("test1");
+}
+//#endregion
+
 /**
  * A level class, contained by `World`.
- * TODO: Make level editor, where constructor will parse JSON into `Level.floor` matrix.
- * 
  * Properties:
  * - `floor` -> A matrix of Tile enums
  * 
  * Methods:
  */
 class Level {
-    constructor(width, height, floor=undefined) {
+    constructor(name, width, height, floor=undefined) {
+        this.name = name;
         // constructor overloading
         if (floor !== undefined) {
             // if preset floor is passed

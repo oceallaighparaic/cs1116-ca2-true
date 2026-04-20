@@ -146,22 +146,24 @@ def editor_page() -> str | Response:
 @app.route("/upload_level", methods=["POST"], strict_slashes=False)
 @admin_required
 def upload_level() -> str:
-    print(session.get("userid"))
+    print(request.form["name"])
     db: Connection = database.get_db()
     try:
-        db.execute("""INSERT INTO levels(creator_id, name, floor) VALUES (?,?,?)""",(session["userid"], request.form["name"], request.form["floor"]))
+        db.execute("""INSERT INTO levels(creator_id, name, floor) VALUES (?,?,?)""",(int(session["userid"]), request.form["name"], request.form["floor"]))
         db.commit()
+        print("success")
         return "success"
     except Exception as e:
+        print(e)
         return "failure"
     
 @app.route("/load_level", methods=["POST"], strict_slashes=False)
 def load_level() -> str:
     db = database.get_db()
-    floor: str = db.execute("""SELECT floor FROM levels WHERE name = ?""",(request.form["name"],)).fetchone()[0]
-    floor = json.loads(floor) # data is stored as json, so we need to convert it BACK to an object
-    if floor:
-        return floor # now it will be converted BACK to json to be transferred to the js :D
+    query = db.execute("""SELECT floor FROM levels WHERE name = ?""",(request.form["name"],)).fetchone()
+    if query:
+        floor = json.loads(query[0]) # data is stored as json, so we need to convert it BACK to an object
+        return json.dumps((request.form["name"], floor)) # now it will be converted BACK to json to be transferred to the js :D
     else:
         return "failure"
 #endregion

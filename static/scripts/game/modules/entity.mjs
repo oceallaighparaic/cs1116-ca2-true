@@ -1,6 +1,6 @@
 import { g_CANVAS, g_CONTEXT, g_WORLD } from "../main.js";
 import { Vector } from "../../utilities.js";
-import { g_TILESIZE } from "./level.mjs";
+import { Tiles, g_TILESIZE } from "./level.mjs";
 
 /**
  * Base entity class.
@@ -11,7 +11,7 @@ import { g_TILESIZE } from "./level.mjs";
  * - `size` -> `Vector` of the size
  * 
  * Methods:
- * - `setPosition()` -> Sets the `position` given a `Vector`
+ * - `setPosition()` -> Sets the `position` given a `Vector`. Collision is done here.
  * - `addPosition()` -> Adds a `Vector` to the `position`
  */
 class Entity {
@@ -76,10 +76,10 @@ class Entity {
                 top: g_WORLD.getTileAt(corners.top)
             }
 
-            if (projections.bottom.tile.collision) {
+            if (Tiles[projections.bottom.tile].collision) {
                 d.x += calc_depenetration(this, new Vector(v.x,this.position.y), projections.bottom.position).x;
             }
-            else if (projections.top.tile.collision) {
+            else if (Tiles[projections.top.tile].collision) {
                 d.x += calc_depenetration(this, new Vector(v.x,this.position.y), projections.top.position).x;
             }
         }
@@ -99,8 +99,8 @@ class Entity {
                 right: g_WORLD.getTileAt(corners.right)
             }
 
-            if (projections.left.tile.collision) d.y += calc_depenetration(this, new Vector(this.position.x,v.y), projections.left.position).y;
-            else if (projections.right.tile.collision) d.y += calc_depenetration(this, new Vector(this.position.x,v.y), projections.right.position).y;
+            if (Tiles[projections.left.tile].collision) d.y += calc_depenetration(this, new Vector(this.position.x,v.y), projections.left.position).y;
+            else if (Tiles[projections.right.tile].collision) d.y += calc_depenetration(this, new Vector(this.position.x,v.y), projections.right.position).y;
         }
         //#endregion
 
@@ -123,7 +123,7 @@ class Entity {
  * - `move_direction` -> `Vector` of the movement of the player
  * 
  * Methods:
- * - `setPosition()` -> Sets the `position` given a `Vector`
+ * - `setPosition()` -> Sets the `position` given a `Vector`. Collision is done here.
  * - `addPosition()` -> Adds a `Vector` to the `position`
  */
 class Player extends Entity {

@@ -21,17 +21,18 @@ class World {
         let matrix = [];
         for (let i = 0; i<25; i++)
             matrix.push(structuredClone(row));
-        this.level = new Level(25,25,matrix);
+        this.level = new Level("editor",25,25,matrix);
         this.current_level_size = this.#calc_level_size();
+        this.position = new Vector(
+            g_CANVAS.width/2-this.current_level_size.x/2,
+            g_CANVAS.height/2-this.current_level_size.y/2
+        );
     }
 
     getTileAt(check) {
         const level = this.level;
 
-        const top_left = new Vector(
-            g_CANVAS.width/2-this.current_level_size.x/2,
-            g_CANVAS.height/2-this.current_level_size.y/2
-        )
+        const top_left = this.position;
         const relative = Vector.subtract(check, top_left);
 
         const matrix_pos = new Vector(
@@ -53,6 +54,33 @@ class World {
         return ret;
     }
 
+    loadLevel(name) {
+        let data = new FormData();
+        data.append("name", name);
+        let xhttp = new XMLHttpRequest();
+        xhttp.open("POST", "/load_level")
+        xhttp.addEventListener("readystatechange", () => {
+            if(xhttp.readyState === 4) { // if response has fully arrived
+                if (xhttp.status !== 200) { console.log("XMLHttpRequest failed."); return; }
+                if (xhttp.responseText === "failure") { console.log(`Failed to load level: ${name}`); return; }
+
+                const response = JSON.parse(xhttp.responseText);
+                // convert Tiles enum keys into actual tile objects
+                let matrix = [];
+                for (let r of response) {
+                    let row = [];
+                    for (let t of r) {
+                        row.push(Tiles[t]);
+                    }
+                    matrix.push(row);
+                }
+
+                this.level = new Level(matrix[0].length, matrix.length, matrix);
+            }
+        }, false);
+        xhttp.send(data);;
+    }
+
     setTile(pos, t) {
         const level = this.level;
 
@@ -67,6 +95,8 @@ class World {
             Math.floor(relative.y/g_TILESIZE) // px to matrix position
         );
 
+        console.log(matrix_pos);
+        if (matrix_pos.x<0 || matrix_pos.x>this.level.floor[0].length-1 || matrix_pos.y<0 || matrix_pos.y>this.level.floor.length-1) return;
         this.level.floor[matrix_pos.y][matrix_pos.x] = t;
     }
 
