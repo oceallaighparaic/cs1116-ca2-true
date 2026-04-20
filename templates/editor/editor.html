@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block header %}
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/editor.css') }}">
+<script type="module" src="{{ url_for('static', filename='scripts/editor/editor.js') }}"></script>
+{% endblock %}
+
+{% block main_content %} 
+<section>
+    <canvas></canvas>
+    <input type="text" id="level_name" placeholder="Level name" />
+</section>
+<p></p>
+{% endblock %}

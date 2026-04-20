@@ -25,4 +25,16 @@ Table permissions {
     }
 }
 
+Table levels {
+  id integer [pk, increment]
+  creator_id integer [not null]
+  name varchar [not null, unique]
+  floor varchar [not null]
+
+  records (id, creator_id, name) {
+      0, 1, "menu"
+  }
+}
+
 ref: users.permission_id < permissions.id
+ref: levels.creator_id > users.id

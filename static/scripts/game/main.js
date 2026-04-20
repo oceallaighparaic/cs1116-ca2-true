@@ -1,8 +1,8 @@
 import { World } from "./modules/world.mjs";
-import { g_TILESIZE } from "./modules/level.mjs";
-import { array_pop, Vector } from "./utilities.js";
+import { Tiles, g_TILESIZE } from "./modules/level.mjs";
+import { array_pop, Vector } from "../utilities.js";
 import { Player } from "./modules/entity.mjs";
-import { UIManager, Canvas, UIElement, Text } from "./uimanager.js";
+import { UIManager, Canvas, UIElement, Text } from "../uimanager.js";
 
 let g_CANVAS;
 let g_CONTEXT;
@@ -14,6 +14,11 @@ let g_WORLD;
 let g_UI;
 let g_PLAYER;
 let g_KEYS_HELD = [];
+let g_MOUSE = Vector.zero();
+let g_MOUSE_HELD = false;
+
+let g_INTERACTING = false;
+let g_INTERACT_HIT; // this variable is only global because im afraid of running isNearTile() twice per frame even tho its not that intensive
 
 // init
 document.addEventListener("DOMContentLoaded", () => {
@@ -27,6 +32,11 @@ document.addEventListener("DOMContentLoaded", () => {
     g_CANVAS.height = Math.floor(window.innerHeight/g_TILESIZE)*g_TILESIZE;
     //#endregion
 
+    //#region MOUSE DETECTION
+    g_CANVAS.addEventListener("mousedown", () => {g_MOUSE_HELD = true;}, false);
+    g_CANVAS.addEventListener("mouseup", () => {g_MOUSE_HELD = false;}, false);
+    //#endregion
+
     //#region GAME SETUP
     g_WORLD = new World();
     g_PLAYER = new Player(
@@ -35,22 +45,29 @@ document.addEventListener("DOMContentLoaded", () => {
         new Vector(15,15),
         new Vector(100,100)
     );
+    g_WORLD.loadLevel("menu", true);
+    g_WORLD.loadLevel("test1");
     //#endregion
 
     //#region BASIC UI
     let game_ui = new Canvas("game");
     g_UI.addCanvas(game_ui);
-    let game_healthbar = new UIElement("healthbar", Vector.zero(), new Vector(g_PLAYER.size.x, g_PLAYER.size.y/4));
-    game_healthbar.background_color = "rgba(255,255,255,1)";
-    game_healthbar.position = Vector.subtract(
-        new Vector(g_CANVAS.width/2, g_CANVAS.height),
-        new Vector(game_healthbar.size.x/2, game_healthbar.size.y+5)
-    );
-    game_ui.addChild(game_healthbar);
+    let interact = new UIElement("interact_container", Vector.zero(), new Vector(30,20));
+    interact.background_color = "rgba(0,0,0,0.4)";
+    game_ui.addChild(interact);
+    let txt = new Text("interact", "F",  new Vector(interact.size.x/2, (interact.size.y/2)+5), Vector.zero());
+    txt.color = "white";
+    txt.font_size = 15;
+    interact.addChild(txt);
     //#endregion
 
     main();
 }, false);
+// DEBUG SHORTCUT FOR EDITING
+window.load_level_from_console = function (name) {
+    console.log(`Loading: ${name}. This will overwrite the current level.`);
+    g_WORLD.loadLevel(name, true);
+}
 
 function main() {
     window.requestAnimationFrame(main);
@@ -84,7 +101,7 @@ function draw() {
     for (let row of g_WORLD.getCurrentLevel().floor) {
         draw_position.x = (g_CANVAS.width/2)-(g_WORLD.current_level_size.x/2);
         for (let t of row) {
-            g_CONTEXT.fillStyle = t.color;
+            g_CONTEXT.fillStyle = Tiles[t].color;
             g_CONTEXT.fillRect(draw_position.x, draw_position.y, g_TILESIZE, g_TILESIZE);
             draw_position.x += g_TILESIZE;
         }
@@ -98,16 +115,26 @@ function draw() {
     //#endregion
 
     //#region UI
-    g_UI.getCanvasByName("game").getChildByName("healthbar").position = new Vector(g_PLAYER.position.x, g_PLAYER.position.y-5);
+    // !-- interact ui + update
+    g_INTERACT_HIT = g_WORLD.isNearTile(g_PLAYER.position, ["Door"], 2);
+    let interact_ui = g_UI.getCanvasByName("game").getChildByName("interact_container");
+    if (g_INTERACT_HIT.is_near) {
+        interact_ui.visible = true;
+        interact_ui.position = Vector.add(g_INTERACT_HIT.position, new Vector(g_TILESIZE/2, g_TILESIZE/2));
+    } else {
+        interact_ui.visible = false;
+    }
+
     for (let c of g_UI.canvases) {
         for (let e of c.children) {
-            e.draw();
+            e.draw(g_CONTEXT);
         }
     }
     //#endregion
 }
 function process_input() {
     g_PLAYER.move_direction = Vector.zero();
+    let b_interact_found = false;
     for (const k of g_KEYS_HELD) {
         switch(k) {
             //#region PLAYER MOVEMENT VECTOR
@@ -124,8 +151,13 @@ function process_input() {
                 g_PLAYER.move_direction.x += 1;
                 break;
             //#endregion
+            case "f":
+                b_interact_found = true;
+                if (!g_INTERACTING && g_INTERACT_HIT.is_near) Tiles[g_INTERACT_HIT.tile].interact(g_WORLD);
+                break;
         }
     }
+    g_INTERACTING = b_interact_found;
 
     //#region PLAYER MOVEMENT
     g_PLAYER.move_direction = Vector.normalize(g_PLAYER.move_direction);
@@ -144,6 +176,10 @@ document.addEventListener("keydown", (event) => {
 }, false);
 document.addEventListener("keyup", (event) => {
     array_pop(g_KEYS_HELD, event.key);
+}, false);
+window.addEventListener("mousemove", (event) => {
+    const rect = g_CANVAS.getBoundingClientRect();
+    g_MOUSE = new Vector(event.clientX-rect.left, event.clientY-rect.top);
 }, false);
 
 export { g_CANVAS, g_CONTEXT, g_WORLD };
