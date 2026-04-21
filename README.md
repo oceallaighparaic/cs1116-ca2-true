@@ -32,7 +32,7 @@ Everything here is made by **me** <3
 - [DBML Renderer](https://dbdiagram.io/d/)
 - [JSFXR](https://sfxr.me/)
 - [Bosca Ceoil](https://boscaceoil.net/)
-- [LEASE Arrangement](https://musescore.com/user/16780816/scores/13407280)
+- [LEASE Arrangement, done in DAW by me](https://musescore.com/user/16780816/scores/13407280)
 
 
 ## References
