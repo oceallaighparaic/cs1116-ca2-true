@@ -30,3 +30,6 @@ Everything here is made by **me** <3
 ## Resources
 
 - [DBML Renderer](https://dbdiagram.io/d/)
+- [JSFXR](https://sfxr.me/)
+- [Bosca Ceoil](https://boscaceoil.net/)
+- [LEASE Arrangement](https://musescore.com/user/16780816/scores/13407280)

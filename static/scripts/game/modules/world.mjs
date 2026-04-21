@@ -2,6 +2,9 @@ import { g_CANVAS } from "../main.js";
 import { Level, Tiles, g_TILESIZE } from "./level.mjs";
 import { Vector, array_pop } from "../../utilities.js";
 
+let music_FREE = new Audio("/static/audio/free.wav");
+music_FREE.addEventListener("ended", () => {music_FREE.currentTime=0;}, false);
+
 /**
  * A World singleton created in `init()`. 
  * Accessed through the WORLD global variable.
@@ -136,6 +139,8 @@ class World {
 
     removeEnemy(e) {
         this.ENEMIES = array_pop(this.ENEMIES, e);
+        if (this.ENEMIES.length === 0)
+            music_FREE.play();
     }
 
     #calc_level_size() {

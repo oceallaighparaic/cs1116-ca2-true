@@ -12,7 +12,31 @@
         <li><a href="{{ url_for('register_page') }}">Register</a></li>
         <li><a href="{{ url_for('login_page') }}">Login</a></li>
     {% else %}
+        <li><a href="{{ url_for('game_page') }}">Game</a></li>
+        <li><a href="{{ url_for('editor_page') }}">Editor (Admin ONLY)</a></li>
         <li><a href="{{ url_for('logout') }}">Logout</a></li>
     {% endif %}
+</ul>
+<h1>How to play:</h1>
+<ul>
+    <li>WASD - Move</li>
+    <li>Space - Dash</li>
+    <li>LClick - Attack</li>
+    <li>F - Progress/Interact</li>
+    <li>Note: You cannot progress if there are enemies alive.</li>
+</ul>
+<h1>Features:</h1>
+<ul>
+    <li>Editor:
+        <ul>
+            <li>Choose between many tiles.</li>
+            <li>Press "Enter" to upload to the DB.</li>
+            <li>Use load_level_from_console() in the console to load a level you created.</li>
+        </ul>
+    </li>
+    <li>WorldManager and UIManager structure</li>
+    <li>Login/Logout</li>
+    <li>4 Levels</li>
+    <li>AJAX level loading</li>
 </ul>
 {% endblock %}
