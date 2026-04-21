@@ -4,6 +4,17 @@ import { Tiles, g_TILESIZE } from "./level.mjs";
 
 let g_ENTITY_ID = 0;
 
+let music_KILL = new Audio("/static/audio/kill.wav");
+music_KILL.addEventListener("ended", () => {music_KILL.currentTime=0;}, false);
+let music_DASH = new Audio("/static/audio/dash.wav");
+music_DASH.addEventListener("ended", () => {music_DASH.currentTime=0;}, false);
+let music_ATTACK = new Audio("/static/audio/attack.wav");
+music_ATTACK.addEventListener("ended", () => {music_ATTACK.currentTime=0;}, false);
+let music_HIT = new Audio("/static/audio/hit.wav");
+music_HIT.addEventListener("ended", () => {music_HIT.currentTime=0;}, false);
+let music_HURT = new Audio("/static/audio/hurt.wav");
+music_HURT.addEventListener("ended", () => {music_HURT.currentTime=0;}, false);
+
 /**
  * Base entity class.
  * 
@@ -151,7 +162,7 @@ class Entity {
  */
 class Player extends Entity {
     constructor(position, velocity, size, movespeed) {
-        super(position, velocity, size, 3);
+        super(position, velocity, size, 6);
         this.move_direction = Vector.zero();
         this.movespeed = movespeed; // px/s
         this.iframes = 0;
@@ -167,7 +178,8 @@ class Player extends Entity {
             if (this.health<0) {
                 // console.log("Died!");
             } else {
-                this.iframes = 10;
+                this.iframes = 20;
+                music_HURT.play();
             }
         }
     }
@@ -178,8 +190,9 @@ class Player extends Entity {
 
         if (this.dashframes<=0) {
             // setup
-            this.dashframes = 6;
-            this.iframes += 6;
+            music_DASH.play();
+            this.dashframes = 8;
+            this.iframes += 14;
             this.dashtarget = Vector.zero();
             this.dashtarget.set(this.move_direction);
         } else if (this.dashframes>0) {
@@ -194,6 +207,7 @@ class Player extends Entity {
     }
 
     attack() {
+        music_ATTACK.play();
         let attack_pos = g_MOUSE;
         const player_center = new Vector(this.position.x+(this.size.x/2), this.position.y+(this.size.y/2));
         const mouse_displacement = Vector.subtract(g_MOUSE,player_center);
@@ -207,6 +221,7 @@ class Player extends Entity {
         for (let e of g_WORLD.ENEMIES) {
             if (Vector.magnitude(Vector.subtract(e.position, attack_pos))<this.attacksize) {
                 e.damage(1);
+                music_HIT.play();
             }
         }
     }
@@ -233,6 +248,7 @@ class Enemy extends Entity {
         this.health -= dmg;
         if (this.health<=0) {
             g_WORLD.removeEnemy(this);
+            music_KILL.play();
         }
     }
 }

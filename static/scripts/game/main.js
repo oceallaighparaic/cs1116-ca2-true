@@ -9,6 +9,7 @@ let g_CONTEXT;
 
 const TARGET_DT = 1000/45; // 1000ms/45frames target
 let g_DT; let last_frame_time = Date.now(); // ms
+let g_RAF = 0;
 
 let g_WORLD;
 let g_UI;
@@ -19,6 +20,10 @@ let g_MOUSE_HELD = false;
 
 let g_INTERACTING = false;
 let g_INTERACT_HIT; // this variable is only global because im afraid of running isNearTile() twice per frame even tho its not that intensive
+
+let g_TOUCHED_WEBSITE = false;
+let music_BCKG = new Audio("static/audio/bckg.wav");
+music_BCKG.loop = true;
 
 // init
 document.addEventListener("DOMContentLoaded", () => {
@@ -65,6 +70,12 @@ document.addEventListener("DOMContentLoaded", () => {
     txt.color = "white";
     txt.font_size = 15;
     interact.addChild(txt);
+    let healthbar = new UIElement("healthbar", Vector.zero(), new Vector(g_PLAYER.size.x, 5));
+    healthbar.background_color = "white";
+    game_ui.addChild(healthbar);
+    let indicator = new UIElement("indicator", Vector.zero(), healthbar.size);
+    indicator.background_color = "red";
+    healthbar.addChild(indicator);
     //#endregion
 
     main();
@@ -76,7 +87,7 @@ window.load_level_from_console = function (name) {
 }
 
 function main() {
-    window.requestAnimationFrame(main);
+    g_RAF = window.requestAnimationFrame(main);
 
     //#region TARGET FPS FUNCTIONALITY
     const current_time = Date.now(); // ms
@@ -90,13 +101,20 @@ function main() {
     last_frame_time = current_time-(g_DT%TARGET_DT);
     //#endregion
 
-    draw();
-    process_input();
-
     for (let e of g_WORLD.ENEMIES) {
         e.update();
     }
     if (g_PLAYER.iframes>0) g_PLAYER.iframes--;
+    if (g_PLAYER.health<=0) stop("loss");
+
+    draw();
+    process_input();
+    
+    let healthbar = g_UI.getCanvasByName("game").getChildByName("healthbar");
+    healthbar.getChildByName("indicator").size.x = (g_PLAYER.size.x/3)*g_PLAYER.health;
+    healthbar.position = Vector.subtract(g_PLAYER.position, new Vector((g_PLAYER.size.x/3)*1.5,10));
+
+    if (g_TOUCHED_WEBSITE) music_BCKG.play();
 }
 function draw() {
     g_CONTEXT.clearRect(0,0,g_CANVAS.width,g_CANVAS.height);
@@ -165,6 +183,7 @@ function process_input() {
     g_PLAYER.move_direction = Vector.zero();
     let b_interact_found = false;
     for (const k of g_KEYS_HELD) {
+        g_TOUCHED_WEBSITE = true;
         switch(k) {
             //#region PLAYER MOVEMENT VECTOR
             case "w":
@@ -202,6 +221,21 @@ function process_input() {
         ));
     }
     //#endregion
+}
+function stop(outcome) {
+    let txt;
+    if (outcome==="loss") {
+        txt = new Text("txt", "Game Over!", Vector.zero(), Vector.zero());
+        txt.color = "red";
+        txt.font_size = 40; // px
+    }
+    let game_canvas = g_UI.getCanvasByName("game");
+    let end_area = new UIElement("end", new Vector(g_CANVAS.width/2-30, g_CANVAS.height/2), Vector.zero());
+    game_canvas.addChild(end_area);
+    end_area.addChild(txt);
+    draw();
+
+    window.cancelAnimationFrame(g_RAF);
 }
 
 document.addEventListener("keydown", (event) => {

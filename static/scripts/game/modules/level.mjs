@@ -12,12 +12,15 @@ const Tiles = {
 const g_TILESIZE = 30; // px 
 
 let g_HARDCODED_LEVEL_NUMBER = 0;
+let music_PROGRESS = new Audio("/static/audio/new_level.wav");
+music_PROGRESS.addEventListener("ended", () => {music_PROGRESS.currentTime=0;}, false);
 
 //#region TILE BEHAVIOURS
 function door_interact(g_WORLD, enemies) {
     if (g_WORLD.ENEMIES<=0) {
         g_WORLD.changeLevel(`level${g_HARDCODED_LEVEL_NUMBER}`);
         g_WORLD.loadLevel(`level${g_HARDCODED_LEVEL_NUMBER+1}`, false);
+        music_PROGRESS.play();
         // spawn enemies - temporary, i dont want to hardcode this but i might have to for now
         switch (g_HARDCODED_LEVEL_NUMBER) {
             case 0:
