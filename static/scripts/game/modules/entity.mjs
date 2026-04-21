@@ -1,8 +1,8 @@
-import { g_CANVAS, g_CONTEXT, g_WORLD, g_PLAYER, g_DT } from "../main.js";
+import { g_CANVAS, g_CONTEXT, g_WORLD, g_PLAYER, g_DT, g_MOUSE } from "../main.js";
 import { Vector, randint } from "../../utilities.js";
 import { Tiles, g_TILESIZE } from "./level.mjs";
 
-let g_BULLET_COUNT = 0;
+let g_ENTITY_ID = 0;
 
 /**
  * Base entity class.
@@ -19,11 +19,13 @@ let g_BULLET_COUNT = 0;
  */
 class Entity {
     constructor(position, velocity, size, health) {
-        this.position = position;
+        this.position = Vector.add(g_WORLD.position, position);
         this.velocity = velocity;
         this.size = size;
         this.health = health;
         this.ignore_collision = [];
+        this.id = g_ENTITY_ID;
+        g_ENTITY_ID++;
     }
 
     // collision is done here!!
@@ -139,11 +141,13 @@ class Entity {
  * - `move_direction` -> `Vector` of the movement of the player
  * - `health` -> The health of the player
  * - `iframes` -> Invulnerability for the player
+ * - `dashframes` -> Dash animation frames
  * 
  * Methods:
  * - `setPosition()` -> Sets the `position` given a `Vector`. Collision is done here.
  * - `addPosition()` -> Adds a `Vector` to the `position`
  * - `damage()` -> Damages the player.
+ * - `attack()` -> Attacks
  */
 class Player extends Entity {
     constructor(position, velocity, size, movespeed) {
@@ -151,15 +155,58 @@ class Player extends Entity {
         this.move_direction = Vector.zero();
         this.movespeed = movespeed; // px/s
         this.iframes = 0;
+        this.dashframes = 0;
+        this.dashtarget = null;
+        this.dashcooldown = 0; //s
+        this.attacksize = 35;
     }
 
     damage(e, dmg) {
         if (this.iframes<=0) {
             this.health -= dmg;
             if (this.health<0) {
-                console.log("Died!");
+                // console.log("Died!");
             } else {
                 this.iframes = 10;
+            }
+        }
+    }
+
+    dash() {
+        if (this.dashcooldown>0.1) return;
+        this.dashcooldown = 0;
+
+        if (this.dashframes<=0) {
+            // setup
+            this.dashframes = 6;
+            this.iframes += 6;
+            this.dashtarget = Vector.zero();
+            this.dashtarget.set(this.move_direction);
+        } else if (this.dashframes>0) {
+            // dash
+            this.dashframes--;
+            this.addPosition(Vector.scale(this.dashtarget, 300/g_DT));
+            if (this.dashframes<=0) {
+                // reset
+                this.dashcooldown = 1.5;
+            }
+        }
+    }
+
+    attack() {
+        let attack_pos = g_MOUSE;
+        const player_center = new Vector(this.position.x+(this.size.x/2), this.position.y+(this.size.y/2));
+        const mouse_displacement = Vector.subtract(g_MOUSE,player_center);
+        if (Vector.magnitude(mouse_displacement)>this.attacksize) {
+            attack_pos = Vector.add(
+                player_center,
+                Vector.scale(Vector.normalize(mouse_displacement), this.attacksize)
+            );
+        }
+
+        for (let e of g_WORLD.ENEMIES) {
+            if (Vector.magnitude(Vector.subtract(e.position, attack_pos))<this.attacksize) {
+                e.damage(1);
             }
         }
     }
@@ -180,6 +227,13 @@ class Enemy extends Entity {
         }
 
         return b_collided;
+    }
+
+    damage(dmg) {
+        this.health -= dmg;
+        if (this.health<=0) {
+            g_WORLD.removeEnemy(this);
+        }
     }
 }
 
@@ -205,7 +259,7 @@ class Dasher extends Enemy {
         this.color = "purple";
 
         this.target = null;
-        this.cooldown = 0; // seconds
+        this.cooldown = 3; // seconds
         this.b_moving = false;
 
         this.ignore_collision = ["Water"];
@@ -299,8 +353,8 @@ class Bullet extends Dasher {
         this.type = "Bullet";
         this.color = "red";
 
-        g_BULLET_COUNT++;
-        this.id = g_BULLET_COUNT;
+        this.cooldown = 0;
+        this.b_moving = false;
     }
 
     setPosition(v) {

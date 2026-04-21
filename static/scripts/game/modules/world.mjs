@@ -27,6 +27,10 @@ class World {
         this.LEVELS.push(new Level("base",25,25));// generate basic level0 fallback
         this.current_level = "base";
         this.current_level_size = this.#calc_level_size();
+        this.position = new Vector(
+            g_CANVAS.width/2-this.current_level_size.x/2,
+            g_CANVAS.height/2-this.current_level_size.y/2
+        )
         this.ENEMIES = [];
     }
 
@@ -43,10 +47,8 @@ class World {
     getTileAt(check) {
         const level = this.getCurrentLevel();
 
-        const top_left = new Vector(
-            g_CANVAS.width/2-this.current_level_size.x/2,
-            g_CANVAS.height/2-this.current_level_size.y/2
-        )
+        let top_left = Vector.zero();
+        top_left.set(this.position);
         const relative = Vector.subtract(check, top_left);
 
         const matrix_pos = new Vector(
@@ -101,10 +103,8 @@ class World {
     isNearTile(pos, tiles, range) {
         const level = JSON.parse(JSON.stringify(this.getCurrentLevel()));
 
-        const top_left = new Vector(
-            g_CANVAS.width/2-this.current_level_size.x/2,
-            g_CANVAS.height/2-this.current_level_size.y/2
-        )
+        let top_left = Vector.zero();
+        top_left.set(this.position);
         const relative = Vector.subtract(pos, top_left);
 
         const matrix_pos = new Vector(
