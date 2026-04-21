@@ -8,6 +8,7 @@
     Home.
 </p>
 <ul>
+    <li><a href="https://github.com/oceallaighparaic/cs1116-ca2-true">Github Repository</a></li>
     {% if not session.userid %}
         <li><a href="{{ url_for('register_page') }}">Register</a></li>
         <li><a href="{{ url_for('login_page') }}">Login</a></li>
@@ -23,15 +24,16 @@
     <li>Space - Dash</li>
     <li>LClick - Attack</li>
     <li>F - Progress/Interact</li>
-    <li>Note: You cannot progress if there are enemies alive.</li>
+    <li>Note: You cannot progress if there are enemies alive. (A 'ding' will play when you can progress)</li>
 </ul>
 <h1>Features:</h1>
 <ul>
     <li>Editor:
         <ul>
+            <li>user: "ADMIN" password: "admin"</li>
             <li>Choose between many tiles.</li>
             <li>Press "Enter" to upload to the DB.</li>
-            <li>Use load_level_from_console() in the console to load a level you created.</li>
+            <li>Use load_level_from_console() in the console to load a level you created and uploaded</li>
         </ul>
     </li>
     <li>WorldManager and UIManager structure</li>
