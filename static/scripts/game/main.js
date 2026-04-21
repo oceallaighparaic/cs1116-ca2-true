@@ -1,7 +1,7 @@
 import { World } from "./modules/world.mjs";
 import { Tiles, g_TILESIZE } from "./modules/level.mjs";
 import { array_pop, Vector } from "../utilities.js";
-import { Player } from "./modules/entity.mjs";
+import { Player, Dasher, Zombie, Skeleton } from "./modules/entity.mjs";
 import { UIManager, Canvas, UIElement, Text } from "../uimanager.js";
 
 let g_CANVAS;
@@ -33,20 +33,26 @@ document.addEventListener("DOMContentLoaded", () => {
     //#endregion
 
     //#region MOUSE DETECTION
-    g_CANVAS.addEventListener("mousedown", () => {g_MOUSE_HELD = true;}, false);
+    g_CANVAS.addEventListener("mousedown", () => {g_MOUSE_HELD = true; g_PLAYER.attack()}, false);
     g_CANVAS.addEventListener("mouseup", () => {g_MOUSE_HELD = false;}, false);
     //#endregion
 
     //#region GAME SETUP
     g_WORLD = new World();
     g_PLAYER = new Player(
-        new Vector(g_CANVAS.width/2,g_CANVAS.height/2), 
+        Vector.scale(g_WORLD.current_level_size, 1/2), 
         Vector.zero(), 
         new Vector(15,15),
         new Vector(100,100)
     );
     g_WORLD.loadLevel("menu", true);
-    g_WORLD.loadLevel("test1");
+    g_WORLD.loadLevel("level0");
+    g_WORLD.spawnEnemy(new Zombie(
+        new Vector(300,50),
+        Vector.zero(),
+        new Vector(20,20),
+        new Vector(2,2)
+    ));
     //#endregion
 
     //#region BASIC UI
@@ -86,6 +92,11 @@ function main() {
 
     draw();
     process_input();
+
+    for (let e of g_WORLD.ENEMIES) {
+        e.update();
+    }
+    if (g_PLAYER.iframes>0) g_PLAYER.iframes--;
 }
 function draw() {
     g_CONTEXT.clearRect(0,0,g_CANVAS.width,g_CANVAS.height);
@@ -97,9 +108,9 @@ function draw() {
 
     //#region LEVEL
     const current_level = g_WORLD.getCurrentLevel();
-    let draw_position = new Vector(0, (g_CANVAS.height/2)-(g_WORLD.current_level_size.y/2));
+    let draw_position = new Vector(0, g_WORLD.position.y);
     for (let row of g_WORLD.getCurrentLevel().floor) {
-        draw_position.x = (g_CANVAS.width/2)-(g_WORLD.current_level_size.x/2);
+        draw_position.x = g_WORLD.position.x;
         for (let t of row) {
             g_CONTEXT.fillStyle = Tiles[t].color;
             g_CONTEXT.fillRect(draw_position.x, draw_position.y, g_TILESIZE, g_TILESIZE);
@@ -109,8 +120,26 @@ function draw() {
     }
     //#endregion
 
+    //#region ENEMIES
+    for (let e of g_WORLD.ENEMIES) {
+        if (e.type === "Dasher") {
+            // choreograph of dash
+            g_CONTEXT.beginPath();
+            g_CONTEXT.moveTo(...e.position.toArray());
+            if (!e.b_moving) g_CONTEXT.lineTo(...Vector.add(e.position, Vector.scale(Vector.normalize(Vector.subtract(g_PLAYER.position, e.position)),100)).toArray());
+            g_CONTEXT.strokeStyle = "red";
+            g_CONTEXT.lineWidth = 2;
+            g_CONTEXT.stroke();
+        }
+
+        g_CONTEXT.fillStyle = e.color;
+        g_CONTEXT.fillRect(...e.position.toArray(), ...e.size.toArray());
+    }
+    //#endregion
+
     //#region PLAYER
-    g_CONTEXT.fillStyle = "yellow";
+    g_CONTEXT.fillStyle = "rgba(255,140,0,1)";
+    if (g_PLAYER.iframes>0) g_CONTEXT.fillStyle = "yellow"; // iframe indicator
     g_CONTEXT.fillRect(...g_PLAYER.position.toArray(), ...g_PLAYER.size.toArray()); // unpacking took FOREVERRR to understand
     //#endregion
 
@@ -153,18 +182,25 @@ function process_input() {
             //#endregion
             case "f":
                 b_interact_found = true;
-                if (!g_INTERACTING && g_INTERACT_HIT.is_near) Tiles[g_INTERACT_HIT.tile].interact(g_WORLD);
+                if (!g_INTERACTING && g_INTERACT_HIT.is_near) Tiles[g_INTERACT_HIT.tile].interact(g_WORLD, {Dasher: Dasher, Skeleton: Skeleton, Zombie: Zombie});
+                break;
+            case " ":
+                if (g_PLAYER.dashframes<=0) g_PLAYER.dash();
                 break;
         }
     }
     g_INTERACTING = b_interact_found;
 
     //#region PLAYER MOVEMENT
-    g_PLAYER.move_direction = Vector.normalize(g_PLAYER.move_direction);
-    g_PLAYER.addPosition(Vector.scale(
-        Vector.multiply(g_PLAYER.move_direction,g_PLAYER.movespeed),
-        g_DT/1000 // convert to seconds
-    ));
+    if (g_PLAYER.dashframes>0) g_PLAYER.dash();
+    if (g_PLAYER.dashframes<=0) {
+        g_PLAYER.dashcooldown -= 1/g_DT;
+        g_PLAYER.move_direction = Vector.normalize(g_PLAYER.move_direction);
+        g_PLAYER.addPosition(Vector.scale(
+            Vector.multiply(g_PLAYER.move_direction,g_PLAYER.movespeed),
+            g_DT/1000 // convert to seconds
+        ));
+    }
     //#endregion
 }
 
@@ -182,4 +218,4 @@ window.addEventListener("mousemove", (event) => {
     g_MOUSE = new Vector(event.clientX-rect.left, event.clientY-rect.top);
 }, false);
 
-export { g_CANVAS, g_CONTEXT, g_WORLD };
+export { g_PLAYER, g_CANVAS, g_CONTEXT, g_WORLD, g_DT, g_MOUSE };

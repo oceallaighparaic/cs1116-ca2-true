@@ -1,4 +1,4 @@
-import { randint } from "../../utilities.js";
+import { randint, Vector } from "../../utilities.js";
 
 const Tiles = {
     None: {color: "rgba(0,0,0,1)", collision: true},
@@ -7,13 +7,138 @@ const Tiles = {
     Grass: {color: "rgba(0,255,0,1)", collision: false},
     Dirt: {color: "rgba(168, 121, 50,1)", collision: false},
     Water: {color: "rgba(0,0,255,1)", collision: true},
-    Door: {color: "rgba(91,106,139,1)", collision: true, interact: door_interact}
+    Door: {color: "rgba(91,106,139,1)", collision: false, interact: door_interact}
 };
 const g_TILESIZE = 30; // px 
 
+let g_HARDCODED_LEVEL_NUMBER = 0;
+
 //#region TILE BEHAVIOURS
-function door_interact(g_WORLD) {
-    g_WORLD.changeLevel("test1");
+function door_interact(g_WORLD, enemies) {
+    if (g_WORLD.ENEMIES<=0) {
+        g_WORLD.changeLevel(`level${g_HARDCODED_LEVEL_NUMBER}`);
+        g_WORLD.loadLevel(`level${g_HARDCODED_LEVEL_NUMBER+1}`, false);
+        // spawn enemies - temporary, i dont want to hardcode this but i might have to for now
+        switch (g_HARDCODED_LEVEL_NUMBER) {
+            case 0:
+                g_WORLD.spawnEnemy(new enemies.Dasher(
+                    new Vector(150,100), 
+                    Vector.zero(), 
+                    new Vector(10,10), 
+                ));
+                g_WORLD.spawnEnemy(new enemies.Dasher(
+                    new Vector(150,300), 
+                    Vector.zero(), 
+                    new Vector(10,10), 
+                ));
+                g_WORLD.spawnEnemy(new enemies.Dasher(
+                    new Vector(500,100), 
+                    Vector.zero(), 
+                    new Vector(10,10), 
+                ));
+                g_WORLD.spawnEnemy(new enemies.Dasher(
+                    new Vector(500,300), 
+                    Vector.zero(), 
+                    new Vector(10,10), 
+                ));
+                break;
+            case 1:
+                g_WORLD.spawnEnemy(new enemies.Zombie(
+                    new Vector(150,500),
+                    Vector.zero(),
+                    new Vector(20,20),
+                    new Vector(2,2)
+                ));
+                g_WORLD.spawnEnemy(new enemies.Zombie(
+                    new Vector(100,500),
+                    Vector.zero(),
+                    new Vector(30,30),
+                    new Vector(1,1)
+                ));
+                g_WORLD.spawnEnemy(new enemies.Zombie(
+                    new Vector(500,500),
+                    Vector.zero(),
+                    new Vector(20,20),
+                    new Vector(2,2)
+                ));
+                g_WORLD.spawnEnemy(new enemies.Skeleton(
+                    new Vector(500,100),
+                    Vector.zero(),
+                    new Vector(15,15)
+                ));
+                break;
+            case 2:
+                g_WORLD.spawnEnemy(new enemies.Dasher(
+                    new Vector(150,350), 
+                    Vector.zero(), 
+                    new Vector(10,10), 
+                ));
+                g_WORLD.spawnEnemy(new enemies.Dasher(
+                    new Vector(150,600), 
+                    Vector.zero(), 
+                    new Vector(10,10), 
+                ));
+                g_WORLD.spawnEnemy(new enemies.Dasher(
+                    new Vector(500,350), 
+                    Vector.zero(), 
+                    new Vector(10,10), 
+                ));
+                g_WORLD.spawnEnemy(new enemies.Dasher(
+                    new Vector(350,600), 
+                    Vector.zero(), 
+                    new Vector(10,10), 
+                ));
+                g_WORLD.spawnEnemy(new enemies.Skeleton(
+                    new Vector(200,700),
+                    Vector.zero(),
+                    new Vector(15,15)
+                ));
+                g_WORLD.spawnEnemy(new enemies.Skeleton(
+                    new Vector(500,700),
+                    Vector.zero(),
+                    new Vector(15,15)
+                ));
+                g_WORLD.spawnEnemy(new enemies.Zombie(
+                    new Vector(400,600),
+                    Vector.zero(),
+                    new Vector(17,17),
+                    new Vector(4,4)
+                ));
+                g_WORLD.spawnEnemy(new enemies.Zombie(
+                    new Vector(300,600),
+                    Vector.zero(),
+                    new Vector(20,20),
+                    new Vector(2,2)
+                ));
+                break;
+            case 3:
+                g_WORLD.spawnEnemy(new enemies.Skeleton(
+                    new Vector(50,400),
+                    Vector.zero(),
+                    new Vector(15,15)
+                ));
+                g_WORLD.spawnEnemy(new enemies.Skeleton(
+                    new Vector(50,300),
+                    Vector.zero(),
+                    new Vector(15,15)
+                ));
+                g_WORLD.spawnEnemy(new enemies.Skeleton(
+                    new Vector(700,300),
+                    Vector.zero(),
+                    new Vector(15,15)
+                ));
+                g_WORLD.spawnEnemy(new enemies.Skeleton(
+                    new Vector(700,400),
+                    Vector.zero(),
+                    new Vector(15,15)
+                ));
+                break;
+        }
+        g_HARDCODED_LEVEL_NUMBER++;
+    } else {
+        console.log("enemies still live!");
+        console.log(g_WORLD.ENEMIES);
+    }
 }
 //#endregion
 

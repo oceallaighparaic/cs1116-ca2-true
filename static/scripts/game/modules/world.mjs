@@ -1,6 +1,6 @@
 import { g_CANVAS } from "../main.js";
 import { Level, Tiles, g_TILESIZE } from "./level.mjs";
-import { Vector } from "../../utilities.js";
+import { Vector, array_pop } from "../../utilities.js";
 
 /**
  * A World singleton created in `init()`. 
@@ -9,8 +9,9 @@ import { Vector } from "../../utilities.js";
  * Properties:
  * - `current_level` -> The current level name 
  *      + **Default: base, menu**
- * - `LEVELS` -> A list of Level instances
+ * - `LEVELS` -> A list of `Level` instances
  * - `current_level_size` -> A `Vector` of the pixel size of the current floor
+ * - `ENEMIES` -> A list of `Enemy` instances
  * 
  * Methods:
  * - `getCurrentLevel()` -> Returns the current `Level` instance
@@ -18,6 +19,7 @@ import { Vector } from "../../utilities.js";
  * - `changeLevel()` -> Changes the current level to another level that is loaded based on the id
  * - `loadLevel()` -> Loads a level from the `level` DB table and adds it to `World.LEVELS`
  * - `isNearTile()` -> Returns if the position is near some tiles depending on the range, and what the tile is
+ * - `spawnEnemy()` -> Adds an `Enemy` to the `World.ENEMIES` array given an instance
  */ 
 class World {
     constructor() {
@@ -25,6 +27,11 @@ class World {
         this.LEVELS.push(new Level("base",25,25));// generate basic level0 fallback
         this.current_level = "base";
         this.current_level_size = this.#calc_level_size();
+        this.position = new Vector(
+            g_CANVAS.width/2-this.current_level_size.x/2,
+            g_CANVAS.height/2-this.current_level_size.y/2
+        )
+        this.ENEMIES = [];
     }
 
     getCurrentLevel() {
@@ -40,10 +47,8 @@ class World {
     getTileAt(check) {
         const level = this.getCurrentLevel();
 
-        const top_left = new Vector(
-            g_CANVAS.width/2-this.current_level_size.x/2,
-            g_CANVAS.height/2-this.current_level_size.y/2
-        )
+        let top_left = Vector.zero();
+        top_left.set(this.position);
         const relative = Vector.subtract(check, top_left);
 
         const matrix_pos = new Vector(
@@ -98,10 +103,8 @@ class World {
     isNearTile(pos, tiles, range) {
         const level = JSON.parse(JSON.stringify(this.getCurrentLevel()));
 
-        const top_left = new Vector(
-            g_CANVAS.width/2-this.current_level_size.x/2,
-            g_CANVAS.height/2-this.current_level_size.y/2
-        )
+        let top_left = Vector.zero();
+        top_left.set(this.position);
         const relative = Vector.subtract(pos, top_left);
 
         const matrix_pos = new Vector(
@@ -125,6 +128,14 @@ class World {
             y++;
         }
         return {is_near: false};
+    }
+
+    spawnEnemy(e) {
+        this.ENEMIES.push(e);
+    }
+
+    removeEnemy(e) {
+        this.ENEMIES = array_pop(this.ENEMIES, e);
     }
 
     #calc_level_size() {
